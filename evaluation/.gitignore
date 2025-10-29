@@ -1,5 +1,5 @@
 # Ignore app folder
-app/
+# app/
 !app/.gitkeep
 
 # Ignore all .tif files
