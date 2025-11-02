@@ -1,0 +1,9 @@
+numpy
+pandas
+matplotlib
+seaborn
+Pillow
+opencv-python
+scipy
+scikit-learn
+jupyter
