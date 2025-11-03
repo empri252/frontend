@@ -144,19 +144,19 @@ def main():
     parser.add_argument(
         '-p', '--predictions',
         type=str,
-        default='./output/predictions.csv',
+        default='../output/predictions.csv',
         help='Path to predictions CSV file with columns: file_name, predicted_class, actual_class'
     )
     parser.add_argument(
         '-w', '--weights',
         type=str,
-        default='./weights',
+        default='../weights',
         help='Directory containing model weight files'
     )
     parser.add_argument(
         '-o', '--output',
         type=str,
-        default='./output/eval_result.csv',
+        default='../output/eval_result.csv',
         help='Path to output CSV file for evaluation results'
     )
     
