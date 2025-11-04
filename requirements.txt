@@ -8,3 +8,5 @@ scipy
 scikit-learn
 jupyter
 tabulate
+keras
+tensorflow
