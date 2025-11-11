@@ -1,26 +1,32 @@
 #!/bin/bash
-# Complete evaluation pipeline: Build Docker, Run inference, Compute metrics
+# ==========================================================
+# 🛰️ Complete Evaluation Pipeline
+# 1️⃣ Runs Docker inference
+# 2️⃣ Computes evaluation metrics
+# ==========================================================
 
-set -e  # Exit on error
+set -e  # Exit immediately if any command fails
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-# Activate virtual environment - handle both Windows and Unix paths
-if [ -f "./venv/Scripts/activate" ]; then
-    # Windows path
-    source "./venv/Scripts/activate"
-else
-    # Unix path
-    source "./venv/bin/activate"
-fi
+echo "=========================================================="
+echo "🧠 Satellite Model Evaluation System"
+echo "=========================================================="
+echo "Skipping virtual environment activation (Docker handles env)..."
+echo ""
 
-# Ask for image name and predictions file if not provided as arguments
+# ==========================================================
+# 🔹 Paths (host machine)
+# ==========================================================
+TEST_DATA_PATH="C:/Users/Issac/Downloads/HacX/test"
+OUTPUT_PATH="../output"
+WEIGHTS_PATH="../weights"
+
+# ==========================================================
+# 🔹 Ask for image name and prediction file
+# ==========================================================
 if [ -z "$1" ]; then
-    echo "=========================================="
-    echo "Complete Docker Evaluation Pipeline"
-    echo "=========================================="
-    echo ""
     read -p "Enter Docker image name (default: satellite-classifier:latest): " IMAGE_NAME
     IMAGE_NAME="${IMAGE_NAME:-satellite-classifier:latest}"
     
@@ -32,50 +38,57 @@ else
 fi
 
 echo ""
-echo "=========================================="
-echo "Complete Docker Evaluation Pipeline"
-echo "=========================================="
-echo "Image: $IMAGE_NAME"
-echo "Predictions file: $PREDICTIONS_FILE"
+echo "=========================================================="
+echo "Running Complete Docker Evaluation"
+echo "=========================================================="
+echo "Docker Image:      $IMAGE_NAME"
+echo "Predictions file:  $PREDICTIONS_FILE"
+echo "Test data folder:  $TEST_DATA_PATH"
 echo ""
 
-# Step 1: Run Docker evaluation with timing
-# echo "Step 1/2: Running Docker evaluation..."
-# python run_docker_evaluation.py \
-#     --image "$IMAGE_NAME" \
-#     --test-data ./test_data \
-#     --output ./output \
-#     --weights ./weights \
-#     --predictions-file "$PREDICTIONS_FILE"
-# echo "Evaluation complete"
-# echo ""
+# ==========================================================
+# 🔹 Step 1 — Run Docker Evaluation (Inference)
+# ==========================================================
+echo "Step 1/2: Running Docker inference on test data..."
+python run_docker_evaluation.py \
+    --image "$IMAGE_NAME" \
+    --test-data "$TEST_DATA_PATH" \
+    --output "$OUTPUT_PATH" \
+    --weights "$WEIGHTS_PATH" \
+    --predictions-file "$PREDICTIONS_FILE"
+echo "✅ Inference complete."
+echo ""
 
-# Step 2: Compute metrics
+# ==========================================================
+# 🔹 Step 2 — Compute Metrics (F1, Params)
+# ==========================================================
 echo "Step 2/2: Computing metrics..."
 python compute_metrics.py \
-    --predictions "../output/$PREDICTIONS_FILE" \
-    --weights ../weights \
-    --output ../output/eval_result.csv
-echo "Metrics computed"
+    --predictions "$OUTPUT_PATH/$PREDICTIONS_FILE" \
+    --weights "$WEIGHTS_PATH" \
+    --output "$OUTPUT_PATH/eval_result.csv"
+echo "✅ Metrics computed."
 echo ""
 
-# Display results
+# ==========================================================
+# 🔹 Display Results Summary
+# ==========================================================
 echo ""
-echo "=========================================="
-echo "EVALUATION RESULTS"
-echo "=========================================="
+echo "=========================================================="
+echo "📊 EVALUATION RESULTS"
+echo "=========================================================="
 
-# Extract metrics from JSON and CSV files
 MODEL_NAME=$(python -c "import json; print(json.load(open('../output/timing_results.json')).get('model_name', 'N/A'))" 2>/dev/null || echo "N/A")
-NUM_IMAGES=$(python -c "import json; print(json.load(open('../output/timing_results.json'))['num_test_files'])" 2>/dev/null || echo "N/A")
-TIME_TO_LAST=$(python -c "import json; d=json.load(open('../output/timing_results.json')); print(f\"{d['num_test_files']/d['full_evaluation']['time_to_last_prediction']:.2f}\")" 2>/dev/null || echo "N/A")
+NUM_IMAGES=$(python -c "import json; print(json.load(open('../output/timing_results.json')).get('num_test_files', 'N/A'))" 2>/dev/null || echo "N/A")
+THROUGHPUT=$(python -c "import json; d=json.load(open('../output/timing_results.json')); print(f\"{d['num_test_files']/d['full_evaluation']['time_to_last_prediction']:.2f}\")" 2>/dev/null || echo "N/A")
 F1_SCORE=$(python -c "import pandas as pd; print(f\"{pd.read_csv('../output/eval_result.csv')['weighted_f1_score'].iloc[0]:.4f}\")" 2>/dev/null || echo "N/A")
 NUM_PARAMS=$(python -c "import pandas as pd; print(f\"{int(pd.read_csv('../output/eval_result.csv')['num_parameters'].iloc[0]):,}\")" 2>/dev/null || echo "N/A")
 
-echo "Model Name: $MODEL_NAME"
+echo "Model Name:          $MODEL_NAME"
 echo "Number of Test Images: $NUM_IMAGES"
-echo "Throughput: $TIME_TO_LAST files/second"
-echo "Weighted F1 Score: $F1_SCORE"
-echo "Model Size: $NUM_PARAMS parameters"
-echo "=========================================="
-
+echo "Throughput:          $THROUGHPUT files/second"
+echo "Weighted F1 Score:   $F1_SCORE"
+echo "Model Size:          $NUM_PARAMS parameters"
+echo "=========================================================="
+echo "✅ Results saved to: $OUTPUT_PATH/"
+echo "=========================================================="
